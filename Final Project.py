@@ -75,7 +75,7 @@ seaborn.heatmap(pvalues, xticklabels=tickers, yticklabels=tickers, cmap='RdYlGn_
 # pair = np.where(pvalues == pvalues.min())
 
 # Testing n > 2
-integrated = np.union1d(np.where(pvalues < 0.05)[0], np.where(pvalues < 0.05)[1])
+integrated = np.union1d(np.where(pvalues < 0.005)[0], np.where(pvalues < 0.005)[1])
 
 
 
@@ -114,22 +114,23 @@ stocks = df.iloc[:,integrated]
 # Testing n > 2 for one window
 returns = []
 for stock in stocks.columns:
-    returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, 2).Trade())
+    returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, 4).Trade())
 plt.plot(returns)
 
 
 
-# Testing n = 2
+
 # Testing different values for window 2
 
+# Testing n = 2
 # asdf = []
 # for i in range(30):
 #     asdf.append(PairsTradingAlgorithm(stock1[767:], (stock1[767:] + stock2[767:]) / 2, 30, i).Trade())
 # plt.plot(asdf)
 
 
+
 # Testing n > 2
-# Testing different values for window 2
 earnings = []
 for i in range(30):
     returns = []
@@ -137,6 +138,9 @@ for i in range(30):
         returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, i).Trade())
     earnings.append(returns)
     
+earnings = pd.DataFrame(data = earnings)
+plt.plot(earnings)
+
 for i in earnings:
     plt.plot(i)
 
