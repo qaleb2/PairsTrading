@@ -22,7 +22,7 @@ from TradingClass import PairsTradingAlgorithm
 
 
 # Gets cleaned data from csv of indices with date colum
-df = pd.read_csv('/Users/Caleb/Documents/Classes/Boston/Fall 2021/703/Final Project/Stocks.csv')
+df = pd.read_csv('/Users/Caleb/PairsTrading/Stocks30_524-123.csv')
 
 # Sets date column as index and drops
 df = df.set_index("Dates", drop = True)
@@ -55,7 +55,6 @@ def find_cointegrated_pairs(data):
             pvalue = result[1]
             score_matrix[i, j] = score
             pvalue_matrix[i, j] = pvalue
-
     return score_matrix, pvalue_matrix
 
 
@@ -68,38 +67,53 @@ seaborn.heatmap(pvalues, xticklabels=tickers, yticklabels=tickers, cmap='RdYlGn_
 
 
 
-# Finding which pairs
+# Too many pairs (roughly half) have cointegration of under 0.05 possibly because they are all nasdaq 100 stocks in same sector
+# Finding which pairs are cointegrated
 pvalues.min()
-pair = np.where(pvalues == pvalues.min())
-
+np.where(pvalues < 0.05)
+np.union1d(np.where(pvalues < 0.001)[0], np.where(pvalues < 0.001)[1])
 
 
 # Finding out which stocks were chosen
-tickers[93, 96]
-
-
-
-
-
+tickers[49]
+tickers[50]
 
 # Actual stocks
-stock1 = df.iloc[:,93]
-stock2 = df.iloc[:,96]
+stock1 = df.iloc[:,49]
+stock2 = df.iloc[:,50]
 
+
+# creating train test split
+len(stock1)*0.8
+len(stock2)*0.2
 
 # Testing n = 2 for one value for window 2
-thing = PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, 2)
+thing = PairsTradingAlgorithm(stock1[:1391], stock2[:1391], 30, 2)
 thing.Trade()
 
 
+# Testing for multiple stocks
+for i in range(len(np.where(pvalues < 0.001)[0])):
+    print(i)
+    stock1 = df.iloc[:,i]
+    stock2 = df.iloc[:,i]
+    PairsTradingAlgorithm(stock1[:1391], stock2[:1391], 30, 2)
+    
+
 
 # Testing different values for window 2
-
-asdf = []
+profit = []
 for i in range(30):
-    asdf.append(PairsTradingAlgorithm(stock1[767:], (stock1[767:] + stock2[767:]) / 2, 30, i).Trade())
-plt.plot(asdf)
+    profit.append(PairsTradingAlgorithm(stock1[:1391], (stock1[:1391] + stock2[:1391]) / 2, 30, i).Trade())
+plt.plot(profit)
 
+np.where(profit == max(profit))
+
+
+#############################################
+# Model Validation
+
+PairsTradingAlgorithm(stock1[1391:], (stock1[1391:] + stock2[1391:]) / 2, 30, 2).Trade()
 
 
 
