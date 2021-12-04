@@ -46,7 +46,6 @@ def find_cointegrated_pairs(data):
     score_matrix = np.zeros((n, n))
     pvalue_matrix = np.ones((n, n))
     keys = data.keys()
-    pairs = []
     for i in range(n):
         for j in range(i+1, n):
             S1 = data[keys[i]]
@@ -56,54 +55,92 @@ def find_cointegrated_pairs(data):
             pvalue = result[1]
             score_matrix[i, j] = score
             pvalue_matrix[i, j] = pvalue
-            if pvalue < 0.05:
-                pairs.append((keys[i], keys[j]))
-    return score_matrix, pvalue_matrix, pairs
+
+    return score_matrix, pvalue_matrix
 
 
 
 # Finding cointegrated pairs
 tickers = df.columns
-scores, pvalues, pairs = find_cointegrated_pairs(df)
+scores, pvalues = find_cointegrated_pairs(df)
 fig, ax = plt.subplots(figsize=(10,10))
 seaborn.heatmap(pvalues, xticklabels=tickers, yticklabels=tickers, cmap='RdYlGn_r' , mask = (pvalues >= 0.05))
 
+
+
 # Finding which pairs
-pvalues.min()
-# np.where(pvalues == pvalues.min())
-np.where(pvalues < 0.05)[0]
-# integrated = np.union1d(np.where(pvalues < 0.05)[0], np.where(pvalues < 0.05)[1])
+
+# Testing n = 2
+# pvalues.min()
+# pair = np.where(pvalues == pvalues.min())
+
+# Testing n > 2
+integrated = np.union1d(np.where(pvalues < 0.05)[0], np.where(pvalues < 0.05)[1])
 
 
-# Which stocks were chosen
-tickers[93]
-tickers[96]
 
 
-# Create log returns for stock1 and stock2
-stock1 = ( np.log(df.iloc[:,93]) - np.log(df.iloc[:,93]).shift(1) )[1:]
-stock2 = ( np.log(df.iloc[:,96]) - np.log(df.iloc[:,96]).shift(1) )[1:]
+# Finding out which stocks were chosen
 
+# n = 2
+# tickers[pair]
+
+# n > 2
+tickers[integrated]
+
+
+
+
+# Stock Inputs
+
+# Testing n = 2
+
+# Actual stocks
 # stock1 = df.iloc[:,93]
 # stock2 = df.iloc[:,96]
 
 
-############################################################
+# Testing n > 2
 
-# Actual Trading
-
-
-
-# OOP Pairs Trading Algorithm. Can adjust starting amount
-thing = PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, 2)
-thing.Trade()
+# Actual stocks
+stocks = df.iloc[:,integrated]
 
 
+
+# Testing n = 2 for one window
+# thing = PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, 2)
+# thing.Trade()
+
+# Testing n > 2 for one window
+returns = []
+for stock in stocks.columns:
+    returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, 2).Trade())
+plt.plot(returns)
+
+
+
+# Testing n = 2
 # Testing different values for window 2
-asdf = []
+
+# asdf = []
+# for i in range(30):
+#     asdf.append(PairsTradingAlgorithm(stock1[767:], (stock1[767:] + stock2[767:]) / 2, 30, i).Trade())
+# plt.plot(asdf)
+
+
+# Testing n > 2
+# Testing different values for window 2
+earnings = []
 for i in range(30):
-    asdf.append(PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, i).Trade())
-plt.plot(asdf)
+    returns = []
+    for stock in stocks.columns:
+        returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, i).Trade())
+    earnings.append(returns)
+    
+for i in earnings:
+    plt.plot(i)
+
+
 
 
 # look at all pairs under 0.05. THink of as a single trading portfolio. Scale by volatility, equally weigh them, etc
