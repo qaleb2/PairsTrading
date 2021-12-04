@@ -77,7 +77,7 @@ np.where(pvalues < 0.05)[0]
 
 # Which stocks were chosen
 tickers[93]
-tickers[96}
+tickers[96]
 
 
 # Create log returns for stock1 and stock2
