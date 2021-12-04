@@ -1,41 +1,39 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+Created on Mon Nov 22 21:26:49 2021
 
-This is a temporary script file.
+@author: Caleb
 """
 
-from pandas_datareader import data 
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import coint, adfuller
 import seaborn
+from TradingClass import PairsTradingAlgorithm
 
 
 
 ############################################################
 
-# DATA
+# DATA PROCESSING 
 
 
 # Gets cleaned data from csv of indices with date colum
 df = pd.read_csv('/Users/Caleb/Documents/Classes/Boston/Fall 2021/703/Final Project/Stocks.csv')
 
-
 # Sets date column as index and drops
 df = df.set_index("Dates", drop = True)
-
 
 # Finds out where the NANs Are
 is_nan = df.isnull()
 row_has_nan = is_nan.any(axis = 1)
 rows_with_NaN = df[row_has_nan]
 
-
 # Gets Rid of Nans
 df = df.dropna()
-
 
 # are there any null values in df
 df.isnull().values.any()
@@ -72,96 +70,29 @@ seaborn.heatmap(pvalues, xticklabels=tickers, yticklabels=tickers, cmap='RdYlGn_
 
 # Finding which pairs
 pvalues.min()
-np.where(pvalues == pvalues.min())
- 
+# np.where(pvalues == pvalues.min())
+np.where(pvalues < 0.05)[0]
+# integrated = np.union1d(np.where(pvalues < 0.05)[0], np.where(pvalues < 0.05)[1])
 
-# Stock2
-tickers[96] 
 
-# Stock1
+# Which stocks were chosen
 tickers[93]
+tickers[96}
 
-# Create stocks1 and stocks2
-stock1 = df.iloc[:,93]
-stock2 = df.iloc[:,96]
+
+# Create log returns for stock1 and stock2
+stock1 = ( np.log(df.iloc[:,93]) - np.log(df.iloc[:,93]).shift(1) )[1:]
+stock2 = ( np.log(df.iloc[:,96]) - np.log(df.iloc[:,96]).shift(1) )[1:]
+
+# stock1 = df.iloc[:,93]
+# stock2 = df.iloc[:,96]
 
 
 ############################################################
 
-# ACTUAL CODE OOP Pairs Trading Algorithm.
+# Actual Trading
 
 
-
-
-class PairsTradingAlgorithm():
-    
-    def __init__(self, S1, S2, window1, window2, startamt = 0):
-        self.money = startamt
-        self.S1 = S1
-        self.S2 = S2
-        self.window1 = window1
-        self.window2 = window2
-        
-        
-        self.ratios = self.S1/self.S2
-        self.countS1 = 0
-        self.countS2 = 0
-
-
-    # Buys s2 and sells s1
-    def Buy(self, i):
-        self.money -= self.S1[i] - self.S2[i] * self.ratios[i]
-        self.countS1 += 1
-        self.countS2 -= self.ratios[i]
-        
-        
-    # Buys s1 and sells s2
-    def Sell(self, i):
-        self.money += self.S1[i] - self.S2[i] * self.ratios[i]
-        self.countS1 -= 1
-        self.countS2 += self.ratios[i]
-    
-    
-    # sells everything
-    def Liquidate(self, i):
-        self.money += self.S1[i] * self.countS1 + self.S2[i] * self.countS2
-        self.countS1 = 0
-        self.countS2 = 0
-        
-        
-    def Trade(self):
-        
-        
-        # Deals with special cases
-        if (self.window1 == 0) or (self.window2 == 0):
-            return 0
-        
-    
-        # Compute rolling mean and rolling standard deviation
-
-        ma1 = self.ratios.rolling(window = self.window1, center=False).mean()
-        ma2 = self.ratios.rolling(window = self.window2, center=False).mean()
-        std = self.ratios.rolling(window = self.window2, center=False).std()
-        zscore = (ma1 - ma2)/std
-        
-        # zscore = (ratios - ratios.mean() ) / std
-        for i in range(len(self.ratios)):
-            
-            # Sell short if the z-score is > 1
-            if zscore[i] < -1:
-                self.Sell(i)
-                
-            # Buy long if the z-score is < -1
-            elif zscore[i] > 1:
-                self.Buy(i)
-            
-            # Clear positions if the z-score between -.5 and .5
-            elif abs(zscore[i]) < 0.75:
-                print(self.countS1, self.countS2)
-                self.Liquidate(i)
-    
-        return self.money
-        
 
 # OOP Pairs Trading Algorithm. Can adjust starting amount
 thing = PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, 2)
@@ -172,10 +103,10 @@ thing.Trade()
 asdf = []
 for i in range(30):
     asdf.append(PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, i).Trade())
-    
 plt.plot(asdf)
 
-# look at all pairs under 0.05. THink of as a single trading portfolio. Scale by volatility, euqlly weigh them, etc
+
+# look at all pairs under 0.05. THink of as a single trading portfolio. Scale by volatility, equally weigh them, etc
 # Look at more data
 # data mining problem. Expanding window calculation. Start with first month, for hedge ratios, etc, then roll forward.
 # Do true out of sample testing. 
