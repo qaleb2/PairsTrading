@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 22 21:26:49 2021
+Created on Sat Dec  4 16:53:44 2021
 
 @author: Caleb
 """
-
 
 import numpy as np
 import pandas as pd
@@ -63,56 +62,38 @@ def find_cointegrated_pairs(data):
 # Finding cointegrated pairs
 tickers = df.columns
 scores, pvalues = find_cointegrated_pairs(df)
-fig, ax = plt.subplots(figsize=(10,10))
-seaborn.heatmap(pvalues, xticklabels=tickers, yticklabels=tickers, cmap='RdYlGn_r' , mask = (pvalues >= 0.05))
 
-
-
-# Finding which pairs
-pvalues.min()
-pair = np.where(pvalues == pvalues.min())
-
-
+# Finding which pairs were chosen
+integrated = np.union1d(np.where(pvalues < 0.005)[0], np.where(pvalues < 0.005)[1])
 
 # Finding out which stocks were chosen
-tickers[93, 96]
-
-
-
-
+tickers[integrated]
 
 
 # Actual stocks
-stock1 = df.iloc[:,93]
-stock2 = df.iloc[:,96]
+stocks = df.iloc[:,integrated]
 
 
-# Testing n = 2 for one value for window 2
-thing = PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, 2)
-thing.Trade()
+# Testing n > 2 for one value for window 2
+returns = []
+for stock in stocks.columns:
+    returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, 4).Trade())
+plt.plot(returns)
 
 
 
-# Testing different values for window 2
 
-asdf = []
+# Testing n > 2 for multiple values for window 2
+earnings = []
 for i in range(30):
-    asdf.append(PairsTradingAlgorithm(stock1[767:], (stock1[767:] + stock2[767:]) / 2, 30, i).Trade())
-plt.plot(asdf)
+    returns = []
+    for stock in stocks.columns:
+        returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, i).Trade())
+    earnings.append(returns)
+    
+earnings = pd.DataFrame(data = earnings)
+plt.plot(earnings)
 
-
-
-
-
-
-
-# look at all pairs under 0.05. THink of as a single trading portfolio. Scale by volatility, equally weigh them, etc
-# Look at more data
-# data mining problem. Expanding window calculation. Start with first month, for hedge ratios, etc, then roll forward.
-# Do true out of sample testing. 
-# Generalize pair to many assets. 
-# What if zscore goes to 5. Stop loss. Optimize z scores
-# Add value to project by looking at implications of transaction costs. 
-# Kalman filter to identify pairs. makes hedge ratios dynamic. 
-# Model validation. 
-
+for i in earnings:
+    plt.plot(i)
+    
