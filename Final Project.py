@@ -8,6 +8,7 @@ Created on Mon Nov 22 21:26:49 2021
 
 
 import numpy as np
+import scipy as sp
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import coint, adfuller
@@ -22,7 +23,7 @@ from TradingClass import PairsTradingAlgorithm
 
 
 # Gets cleaned data from csv of indices with date colum
-df = pd.read_csv('/Users/Caleb/Documents/Classes/Boston/Fall 2021/703/Final Project/Stocks.csv')
+df = pd.read_csv('/Users/Caleb/PairsTrading/Stocks30_524-123.csv')
 
 # Sets date column as index and drops
 df = df.set_index("Dates", drop = True)
@@ -55,7 +56,6 @@ def find_cointegrated_pairs(data):
             pvalue = result[1]
             score_matrix[i, j] = score
             pvalue_matrix[i, j] = pvalue
-
     return score_matrix, pvalue_matrix
 
 
@@ -68,86 +68,103 @@ seaborn.heatmap(pvalues, xticklabels=tickers, yticklabels=tickers, cmap='RdYlGn_
 
 
 
-# Finding which pairs
 
-# Testing n = 2
-# pvalues.min()
-# pair = np.where(pvalues == pvalues.min())
+pvalues.min()
+np.where(pvalues == pvalues.min())
 
-# Testing n > 2
-integrated = np.union1d(np.where(pvalues < 0.005)[0], np.where(pvalues < 0.005)[1])
+# Too many pairs (roughly half) have cointegration of under 0.05 possibly because they are all nasdaq 100 stocks in same sector
 
-
+np.where(pvalues < 0.05)
+np.where(pvalues < 0.001)
+np.union1d(np.where(pvalues < 0.001)[0], np.where(pvalues < 0.001)[1])
 
 
 # Finding out which stocks were chosen
+tickers[49]
+tickers[50]
 
-# n = 2
-# tickers[pair]
-
-# n > 2
-tickers[integrated]
-
-
-
-
-# Stock Inputs
-
-# Testing n = 2
 
 # Actual stocks
-# stock1 = df.iloc[:,93]
-# stock2 = df.iloc[:,96]
+stock1 = df.iloc[:,49]
+stock2 = df.iloc[:,50]
 
 
-# Testing n > 2
-
-# Actual stocks
-stocks = df.iloc[:,integrated]
-
+# creating train test split
+split = round(len(stock1)*0.8)
+len(stock2)*0.2
 
 
-# Testing n = 2 for one window
-# thing = PairsTradingAlgorithm(stock1[767:], stock2[767:], 30, 2)
-# thing.Trade()
-
-# Testing n > 2 for one window
-returns = []
-for stock in stocks.columns:
-    returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, 4).Trade())
-plt.plot(returns)
+totalreturns, tickersreturns = PairsTradingAlgorithm(stock1[:split], (stock1[:split] + stock2[:split]) / 2, 30, 2, 2).Trade()
 
 
-
-
-# Testing different values for window 2
-
-# Testing n = 2
-# asdf = []
-# for i in range(30):
-#     asdf.append(PairsTradingAlgorithm(stock1[767:], (stock1[767:] + stock2[767:]) / 2, 30, i).Trade())
-# plt.plot(asdf)
-
-
-
-# Testing n > 2
-earnings = []
-for i in range(30):
-    returns = []
-    for stock in stocks.columns:
-        returns.append(PairsTradingAlgorithm(stocks[stock], np.mean(stocks.transpose()), 30, i).Trade())
-    earnings.append(returns)
     
-earnings = pd.DataFrame(data = earnings)
-plt.plot(earnings)
 
-for i in earnings:
-    plt.plot(i)
+# Finding best window for lowest pvalue stock
+profit = []
+for i in range(30):
+    profit.append(PairsTradingAlgorithm(stock1[:split], (stock1[:split] + stock2[:split]) / 2, 30, i).Trade())
+plt.plot(profit)
+np.where(profit == max(profit))
 
 
 
 
-# look at all pairs under 0.05. THink of as a single trading portfolio. Scale by volatility, equally weigh them, etc
+
+
+# Finding best window for all pairs
+bestwindow = []
+for j in range(2,30):
+    
+    # Calculates profit for each pair
+    profit = []
+    for i in range(len(np.where(pvalues < 0.001)[0])):
+        stock1 = df.iloc[:,np.where(pvalues < 0.001)[0][i]]
+        stock2 = df.iloc[:,np.where(pvalues < 0.001)[1][i]]
+        profit.append(PairsTradingAlgorithm(stock1[:split], stock2[:split], 30, j, 1).Trade()[0])
+
+    plt.plot(profit)
+    plt.show()
+    bestwindow.append(np.where(profit == max(profit)))
+
+# Finding best window for multiple stocks
+
+
+
+
+
+############################################
+# Testing Zscores (1, 2, 3, 4, 5)
+
+profit=[]
+for i in range(len(np.where(pvalues < 0.001)[0])):
+    profit.append(PairsTradingAlgorithm(stock1, stock2, 30, 2, 1 + 0.5 * i).Trade()[0])
+    print(i)
+plt.plot(profit)
+
+max_profit = max(profit)
+max_index = profit.index(max_profit)
+print(max_index*0.5+0.5)
+
+
+
+#############################################
+
+# Model Validation on multiple stocks
+profit = []
+for i in range(len(np.where(pvalues < 0.001)[0])):
+    stock1 = df.iloc[:,np.where(pvalues < 0.001)[0][i]]
+    stock2 = df.iloc[:,np.where(pvalues < 0.001)[1][i]]
+    profit.append(PairsTradingAlgorithm(stock1[split:], stock2[split:], 30, 2).Trade())
+plt.plot(profit)
+
+
+PairsTradingAlgorithm(stock1[split:], (stock1[split:] + stock2[split:]) / 2, 30, 2).Trade()
+
+
+
+
+
+# look at all pairs under 0.05. Think of as a single trading portfolio. Scale by volatility, equally weigh them, etc
 # Look at more data
 # data mining problem. Expanding window calculation. Start with first month, for hedge ratios, etc, then roll forward.
 # Do true out of sample testing. 
